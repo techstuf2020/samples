@@ -16,7 +16,7 @@ By default it runs the research through **Claude Code signed in with your Claude
 |---|---|---|
 | Claude Pro (or Max) plan | claude.ai | Your existing plan |
 | Gmail App Password | Google Account > Security > 2-Step Verification > App passwords | Free |
-| Always-on Linux machine | e.g. AWS EC2 `t3.micro` with Ubuntu (free-tier eligible) | EC2 hourly price |
+| Always-on Linux machine | e.g. AWS EC2 `t3.micro` with Ubuntu and a **20 GB** disk (free-tier eligible) | EC2 hourly price |
 
 ## Install on EC2 (Ubuntu)
 

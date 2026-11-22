@@ -22,6 +22,14 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
+free_mb=$(df -Pm "$HOME" | awk 'NR == 2 { print $4 }')
+if [ "$free_mb" -lt 4000 ]; then
+    echo "Only ${free_mb} MB of disk is free; the build needs about 4 GB." >&2
+    echo "Make the EC2 disk bigger (20 GB is plenty): EC2 > Volumes > Modify volume, then" >&2
+    echo "  sudo growpart /dev/nvme0n1 1 && sudo resize2fs /dev/nvme0n1p1" >&2
+    exit 1
+fi
+
 step "Adding swap so compiling fits in memory"
 if [ -z "$(swapon --show)" ]; then
     sudo fallocate -l 2G /swapfile
