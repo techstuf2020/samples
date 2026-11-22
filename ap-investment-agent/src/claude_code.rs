@@ -16,10 +16,12 @@ pub fn research(claude_bin: &str, system: &str, prompt: &str) -> Result<String> 
         .with_context(|| format!("running {claude_bin} (is Claude Code installed?)"))?;
 
     if !output.status.success() {
+        // Claude Code prints some errors (sign-in, usage limits) to stdout rather than stderr.
         bail!(
-            "Claude Code exited with {}: {}",
+            "Claude Code exited with {}: {} {}",
             output.status,
-            String::from_utf8_lossy(&output.stderr).trim()
+            String::from_utf8_lossy(&output.stderr).trim(),
+            String::from_utf8_lossy(&output.stdout).trim()
         );
     }
     let report = String::from_utf8(output.stdout).context("Claude Code output is not UTF-8")?;
