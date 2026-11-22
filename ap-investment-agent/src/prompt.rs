@@ -24,8 +24,23 @@ Write the report in Markdown with these sections:
 2. **New investments**: a table with columns Date | Company / Project | Sector | Amount (Rs crore) | Location | Status | Source. Newest first.
 3. **Infrastructure updates**: bullets, each with date and source link.
 4. **Policy & government decisions**: bullets, each with date and source link.
-5. **Watch next week**: upcoming events, deadlines or decisions mentioned in the sources.
+5. **Industries Andhra Pradesh is pursuing**: every industry or sector the state is actively \
+promoting or courting (for example IT/GCCs, data centres and AI, electronics and semiconductors, \
+green hydrogen and renewables, pharma and life sciences, steel and metals, petrochemicals and \
+refineries, food processing, aquaculture, textiles, defence and aerospace, logistics and ports, \
+tourism, and any others the sources mention). One subsection per industry, ordered by size of \
+committed investment, each with:
+   - **Current activity**: key projects, companies, clusters or parks and their locations, with amounts where reported.
+   - **Future plans**: stated targets, timelines, upcoming phases, policies and incentives, and planned projects, as the government or companies have announced them.
+   - **Status**: proposed, MoU signed, approved, under construction or operational.
+   - **Sources**: Markdown links, each with its publication date.
+   End with a short table: Industry | Committed investment (Rs crore, as reported) | Key locations | Target or timeline.
+6. **Watch next week**: upcoming events, deadlines or decisions mentioned in the sources.
 
-Only include items dated within the period. Put the source as a Markdown link on every row and bullet."
+Sections 1-4 and 6 cover only items dated within the period. Section 5 is a standing overview: \
+use the most recent reliable sources even if they are older than the period, give each item's \
+date, and mark anything announced within the period as **(new this week)**. Report plans only \
+as the sources state them; never project or invent targets. Put the source as a Markdown link \
+on every row and bullet."
     )
 }
