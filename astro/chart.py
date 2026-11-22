@@ -223,6 +223,201 @@ def print_chart(c, place=""):
     print("Dasha dates are in local time (same zone as the birth time).")
 
 
+# ---------------------------------------------------------------- divisional charts
+# Sign indices: 0 = Aries ... 11 = Pisces. "Odd" signs in the Jyotish sense
+# (Aries, Gemini, ...) have even indices here.
+VARGA_NAMES = {"D4": "Chaturthamsa", "D7": "Saptamsa", "D9": "Navamsa",
+               "D10": "Dasamsa", "D12": "Dwadasamsa"}
+GRAHAS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
+
+
+def _part(deg_in_sign, n):
+    return min(int(deg_in_sign / (30 / n)), n - 1)
+
+
+def varga_sign(lon, varga):
+    """Sign index (0-11) of sidereal longitude `lon` in divisional chart `varga`."""
+    sign, deg = int(lon // 30) % 12, lon % 30
+    if varga == "D9":
+        # Movable signs count from themselves, fixed from the 9th, dual from the 5th
+        # (i.e. fire signs start in Aries, earth in Capricorn, air in Libra, water in Cancer).
+        start = sign + (0, 8, 4)[sign % 3]
+        return (start + _part(deg, 9)) % 12
+    if varga == "D10":
+        start = sign if sign % 2 == 0 else sign + 8        # odd: itself, even: 9th
+        return (start + _part(deg, 10)) % 12
+    if varga == "D12":
+        return (sign + _part(deg, 12)) % 12                # from the sign itself
+    if varga == "D4":
+        return (sign + 3 * _part(deg, 4)) % 12             # sign, 4th, 7th, 10th
+    if varga == "D7":
+        start = sign if sign % 2 == 0 else sign + 6        # odd: itself, even: 7th
+        return (start + _part(deg, 7)) % 12
+    raise ValueError(f"Unsupported varga {varga!r}; choose from {', '.join(VARGA_NAMES)}")
+
+
+def compute_varga(chart, varga):
+    asc_d1 = chart["ascendant"]["sign_index"]
+    lagna = varga_sign(chart["ascendant"]["longitude"], varga)
+    rows = [{"name": "Ascendant", "sign": SIGNS[lagna], "sign_index": lagna, "house": 1,
+             "vargottama": lagna == asc_d1}]
+    for p in chart["planets"]:
+        s = varga_sign(p["longitude"], varga)
+        rows.append({"name": p["name"], "sign": SIGNS[s], "sign_index": s,
+                     "house": (s - lagna) % 12 + 1, "vargottama": s == p["sign_index"],
+                     "d1_sign": p["sign"]})
+    return {"varga": varga, "name": VARGA_NAMES[varga], "lagna": SIGNS[lagna], "rows": rows}
+
+
+def print_varga(v):
+    print(f"\n{v['varga']} {v['name']}  (lagna {v['lagna']})")
+    hdr = f"{'Body':<10}{'D1 sign':<13}{v['varga'] + ' sign':<13}{'House':>5}  Vargottama"
+    print(hdr)
+    print("-" * len(hdr))
+    for r in v["rows"]:
+        d1 = r.get("d1_sign", "")
+        print(f"{r['name']:<10}{d1:<13}{r['sign']:<13}{r['house']:>5}  {'yes' if r['vargottama'] else ''}")
+
+
+# ---------------------------------------------------------------- ashtakavarga
+# Parashari benefic places: for each planet's BAV, the houses (counted from each
+# contributor, contributor = 1st) that receive a bindu.
+AV_CONTRIBUTORS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Lagna"]
+AV_TABLE = {
+    "Sun": {"Sun": [1, 2, 4, 7, 8, 9, 10, 11], "Moon": [3, 6, 10, 11],
+            "Mars": [1, 2, 4, 7, 8, 9, 10, 11], "Mercury": [3, 5, 6, 9, 10, 11, 12],
+            "Jupiter": [5, 6, 9, 11], "Venus": [6, 7, 12],
+            "Saturn": [1, 2, 4, 7, 8, 9, 10, 11], "Lagna": [3, 4, 6, 10, 11, 12]},
+    "Moon": {"Sun": [3, 6, 7, 8, 10, 11], "Moon": [1, 3, 6, 7, 10, 11],
+             "Mars": [2, 3, 5, 6, 9, 10, 11], "Mercury": [1, 3, 4, 5, 7, 8, 10, 11],
+             "Jupiter": [1, 4, 7, 8, 10, 11, 12], "Venus": [3, 4, 5, 7, 9, 10, 11],
+             "Saturn": [3, 5, 6, 11], "Lagna": [3, 6, 10, 11]},
+    "Mars": {"Sun": [3, 5, 6, 10, 11], "Moon": [3, 6, 11], "Mars": [1, 2, 4, 7, 8, 10, 11],
+             "Mercury": [3, 5, 6, 11], "Jupiter": [6, 10, 11, 12], "Venus": [6, 8, 11, 12],
+             "Saturn": [1, 4, 7, 8, 9, 10, 11], "Lagna": [1, 3, 6, 10, 11]},
+    "Mercury": {"Sun": [5, 6, 9, 11, 12], "Moon": [2, 4, 6, 8, 10, 11],
+                "Mars": [1, 2, 4, 7, 8, 9, 10, 11], "Mercury": [1, 3, 5, 6, 9, 10, 11, 12],
+                "Jupiter": [6, 8, 11, 12], "Venus": [1, 2, 3, 4, 5, 8, 9, 11],
+                "Saturn": [1, 2, 4, 7, 8, 9, 10, 11], "Lagna": [1, 2, 4, 6, 8, 10, 11]},
+    "Jupiter": {"Sun": [1, 2, 3, 4, 7, 8, 9, 10, 11], "Moon": [2, 5, 7, 9, 11],
+                "Mars": [1, 2, 4, 7, 8, 10, 11], "Mercury": [1, 2, 4, 5, 6, 9, 10, 11],
+                "Jupiter": [1, 2, 3, 4, 7, 8, 10, 11], "Venus": [2, 5, 6, 9, 10, 11],
+                "Saturn": [3, 5, 6, 12], "Lagna": [1, 2, 4, 5, 6, 7, 9, 10, 11]},
+    "Venus": {"Sun": [8, 11, 12], "Moon": [1, 2, 3, 4, 5, 8, 9, 11, 12],
+              "Mars": [3, 5, 6, 9, 11, 12], "Mercury": [3, 5, 6, 9, 11],
+              "Jupiter": [5, 8, 9, 10, 11], "Venus": [1, 2, 3, 4, 5, 8, 9, 10, 11],
+              "Saturn": [3, 4, 5, 8, 9, 10, 11], "Lagna": [1, 2, 3, 4, 5, 8, 9, 11]},
+    "Saturn": {"Sun": [1, 2, 4, 7, 8, 10, 11], "Moon": [3, 6, 11],
+               "Mars": [3, 5, 6, 10, 11, 12], "Mercury": [6, 8, 9, 10, 11, 12],
+               "Jupiter": [5, 6, 11, 12], "Venus": [6, 11, 12], "Saturn": [3, 5, 6, 11],
+               "Lagna": [1, 3, 4, 6, 10, 11]},
+}
+
+
+def ashtakavarga(chart):
+    """Return (bav, sav): bav[planet] = 12 bindu counts by sign (Aries..Pisces)."""
+    pos = {p["name"]: p["sign_index"] for p in chart["planets"]}
+    pos["Lagna"] = chart["ascendant"]["sign_index"]
+    bav = {}
+    for planet, table in AV_TABLE.items():
+        bav[planet] = [sum(1 for c in AV_CONTRIBUTORS if (s - pos[c]) % 12 + 1 in table[c])
+                       for s in range(12)]
+    sav = [sum(bav[p][s] for p in bav) for s in range(12)]
+    return bav, sav
+
+
+def print_ashtakavarga(bav, sav, asc_sign):
+    print("\nBhinnashtakavarga (bindus by sign)          house numbers are from the natal Lagna")
+    hdr = f"{'':<9}" + "".join(f"{s[:3]:>5}" for s in SIGNS) + f"{'Total':>7}"
+    print(hdr)
+    print(f"{'House':<9}" + "".join(f"{(s - asc_sign) % 12 + 1:>5}" for s in range(12)))
+    print("-" * len(hdr))
+    for planet, row in bav.items():
+        print(f"{planet:<9}" + "".join(f"{v:>5}" for v in row) + f"{sum(row):>7}")
+    print("-" * len(hdr))
+    print(f"{'SAV':<9}" + "".join(f"{v:>5}" for v in sav) + f"{sum(sav):>7}")
+
+
+# ---------------------------------------------------------------- transits
+TRANSIT_BODIES = ["Jupiter", "Saturn", "Rahu", "Ketu"]
+SADE_SATI = {12: "Sade Sati (rising)", 1: "Sade Sati (peak)", 2: "Sade Sati (setting)"}
+KANTAKA = {1, 4, 7, 10}   # Saturn in a kendra from the natal Moon
+
+
+def _months(start, end):
+    y, m = map(int, start.split("-")[:2])
+    ey, em = map(int, end.split("-")[:2])
+    if (y, m) > (ey, em):
+        raise ValueError("--transit-range START must not be after END")
+    while (y, m) <= (ey, em):
+        yield y, m
+        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+
+
+def transit_positions(when_local, offset, true_node=False):
+    """Sidereal Jupiter, Saturn, Rahu, Ketu at a local datetime. Returns {name: (lon, retro)}."""
+    utc = when_local - timedelta(hours=offset)
+    jd = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60)
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
+    out = {}
+    for name, pid in (("Jupiter", swe.JUPITER), ("Saturn", swe.SATURN)):
+        xx, _ = swe.calc_ut(jd, pid, flags)
+        out[name] = (xx[0] % 360, xx[3] < 0)
+    xx, _ = swe.calc_ut(jd, swe.TRUE_NODE if true_node else swe.MEAN_NODE, flags)
+    out["Rahu"] = (xx[0] % 360, True)
+    out["Ketu"] = ((xx[0] + 180) % 360, True)
+    return out
+
+
+def compute_transits(chart, start, end, sav):
+    """Monthly transits (1st of each month, 12:00 birth-zone time) over START..END (YYYY-MM)."""
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    asc = chart["ascendant"]["sign_index"]
+    moon = next(p["sign_index"] for p in chart["planets"] if p["name"] == "Moon")
+    zone, tz = chart["input"]["zone"], chart["input"]["utc_offset"]
+    rows = []
+    for y, m in _months(start, end):
+        when = datetime(y, m, 1, 12, 0)
+        offset = resolve_offset(when, zone, None if zone else tz)
+        pos = transit_positions(when, offset, chart["input"]["true_node"])
+        row = {"month": f"{y}-{m:02d}", "bodies": {}}
+        for name in TRANSIT_BODIES:
+            lon, retro = pos[name]
+            s = int(lon // 30)
+            row["bodies"][name] = {
+                "sign": SIGNS[s], "degree": lon % 30, "retrograde": retro,
+                "from_lagna": (s - asc) % 12 + 1, "from_moon": (s - moon) % 12 + 1,
+                "sav": sav[s]}
+        sat_from_moon = row["bodies"]["Saturn"]["from_moon"]
+        flags = []
+        if sat_from_moon in SADE_SATI:
+            flags.append(SADE_SATI[sat_from_moon])
+        if sat_from_moon in KANTAKA:
+            flags.append(f"Kantaka Shani ({sat_from_moon} from Moon)")
+        row["flags"] = flags
+        rows.append(row)
+    return rows
+
+
+def print_transits(rows, chart):
+    moon = next(p for p in chart["planets"] if p["name"] == "Moon")
+    print(f"\nTransits (1st of month, 12:00 local)   natal Lagna {chart['ascendant']['sign']}, "
+          f"natal Moon {moon['sign']}")
+    print("Cells: sign degree [R]  L=house from Lagna  M=house from Moon  SAV=bindus of that sign")
+    w = 30
+    hdr = f"{'Month':<9}" + "".join(f"{n:<{w}}" for n in TRANSIT_BODIES) + "Saturn flags"
+    print(hdr)
+    print("-" * (len(hdr) + 20))
+    for r in rows:
+        cells = []
+        for n in TRANSIT_BODIES:
+            b = r["bodies"][n]
+            retro = "R" if b["retrograde"] and n in ("Jupiter", "Saturn") else " "
+            cells.append(f"{b['sign'][:3]} {int(b['degree']):>2}° {retro} "
+                         f"L{b['from_lagna']:<2} M{b['from_moon']:<2} SAV{b['sav']:<3}".ljust(w))
+        print(f"{r['month']:<9}" + "".join(cells) + "; ".join(r["flags"]))
+
+
 def main():
     ap = argparse.ArgumentParser(description="Sidereal (Lahiri) chart + Vimshottari dasha")
     ap.add_argument("--date", required=True, help="YYYY-MM-DD (local)")
@@ -234,12 +429,36 @@ def main():
     ap.add_argument("--place", default="", help="label for the output only")
     ap.add_argument("--true-node", action="store_true", help="use true node (default: mean node)")
     ap.add_argument("--ephe", default=None, help="path to Swiss Ephemeris .se1 files (optional)")
+    ap.add_argument("--varga", default=None,
+                    help="comma list of divisional charts: " + ",".join(VARGA_NAMES))
+    ap.add_argument("--ashtakavarga", action="store_true",
+                    help="print Bhinnashtakavarga and Sarvashtakavarga tables")
+    ap.add_argument("--transit-range", nargs=2, metavar=("START", "END"),
+                    help="monthly Jupiter/Saturn/Rahu/Ketu transits, YYYY-MM YYYY-MM")
     args = ap.parse_args()
     if args.tz is None and not args.zone:
         ap.error("give --tz (UTC offset in hours) or --zone (IANA time zone)")
+    vargas = []
+    if args.varga:
+        vargas = [v.strip().upper() for v in args.varga.split(",") if v.strip()]
+        bad = [v for v in vargas if v not in VARGA_NAMES]
+        if bad:
+            ap.error(f"unknown varga {', '.join(bad)}; choose from {', '.join(VARGA_NAMES)}")
     c = compute_chart(args.date, args.time, args.lat, args.lon, tz_hours=args.tz, zone=args.zone,
                       true_node=args.true_node, ephe_path=args.ephe)
     print_chart(c, args.place)
+    for v in vargas:
+        print_varga(compute_varga(c, v))
+    if args.ashtakavarga or args.transit_range:
+        bav, sav = ashtakavarga(c)
+        if args.ashtakavarga:
+            print_ashtakavarga(bav, sav, c["ascendant"]["sign_index"])
+        if args.transit_range:
+            try:
+                rows = compute_transits(c, *args.transit_range, sav)
+            except ValueError as e:
+                ap.error(str(e))
+            print_transits(rows, c)
 
 
 if __name__ == "__main__":

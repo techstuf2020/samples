@@ -34,6 +34,24 @@ WSGI server, e.g. `pip install gunicorn && gunicorn -b 0.0.0.0:5000 app:app`.
 
 ```bash
 .venv/bin/python chart.py --date 1990-05-17 --time 06:45 --lat 17.385 --lon 78.4867 --zone Asia/Kolkata
+
+# divisional charts, ashtakavarga and monthly transits
+.venv/bin/python chart.py --date 1990-05-17 --time 06:45 --lat 17.385 --lon 78.4867 --zone Asia/Kolkata \
+    --varga D9,D10,D12,D4,D7 --ashtakavarga --transit-range 2027-06 2028-12
+```
+
+- `--varga`: any of D4, D7, D9, D10, D12. Prints the ascendant and nine grahas with sign,
+  house from the varga lagna, and vargottama flag.
+- `--ashtakavarga`: Bhinnashtakavarga for the seven planets (Parashari tables) and the
+  Sarvashtakavarga per sign (always totals 337).
+- `--transit-range START END` (YYYY-MM): Jupiter, Saturn, Rahu and Ketu on the 1st of each
+  month at 12:00 birth-zone time, with houses from the natal Lagna and Moon, the SAV bindus of
+  the transited sign, and Sade Sati / Kantaka Shani flags.
+
+## Tests
+
+```bash
+.venv/bin/python -m unittest -v tests.test_chart
 ```
 
 ## Conventions
@@ -43,3 +61,8 @@ WSGI server, e.g. `pip install gunicorn && gunicorn -b 0.0.0.0:5000 app:app`.
 - Dasha year = 365.25 days; dasha dates are in birth-place local time.
 - Without `.se1` ephemeris files Swiss Ephemeris uses its built-in Moshier model
   (sub-arcminute accuracy). Pass `--ephe <dir>` / `ephe_path` to use the files.
+- D9: movable signs count from themselves, fixed from the 9th, dual from the 5th.
+  D10: odd signs from themselves, even from the 9th. D12: from the sign. D4: the sign and
+  its 4th, 7th and 10th. D7: odd signs from themselves, even from the 7th.
+- Sade Sati: Saturn in the 12th, 1st or 2nd from the natal Moon. Kantaka Shani: Saturn in
+  the 1st, 4th, 7th or 10th from the natal Moon (traditions differ; adjust `KANTAKA` in chart.py).
