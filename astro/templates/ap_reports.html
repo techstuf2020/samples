@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AP Investment Reports</title>
+<style>
+:root{
+  --bg:#f6f4ef; --panel:#ffffff; --ink:#1f1d1a; --muted:#6b665d; --line:#e2ddd2;
+  --accent:#b4531b; --accent-soft:#f6e6d9; --cell:#fbfaf7;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#15140f; --panel:#1f1d18; --ink:#ece7dc; --muted:#a39d90; --line:#36322a;
+    --accent:#e48a4e; --accent-soft:#3a2a1d; --cell:#25231d; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{margin:0;font-size:20px}
+header span{color:var(--muted);font-size:13px}
+nav{margin-left:auto;display:flex;gap:16px;font-size:14px}
+nav a{color:var(--muted);text-decoration:none}
+nav a.on,nav a:hover{color:var(--accent)}
+main{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;padding:20px 24px;max-width:1300px;margin:0 auto}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr);padding:16px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.panel h2.k{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.weeks{display:flex;flex-direction:column;gap:6px}
+.weeks a{display:block;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--cell);color:var(--ink);text-decoration:none}
+.weeks a:hover{border-color:var(--accent)}
+.weeks a.on{border-color:var(--accent);background:var(--accent-soft)}
+.weeks small{display:block;color:var(--muted);font-size:12px}
+.note{font-size:12px;color:var(--muted);margin-top:14px}
+.empty{color:var(--muted);text-align:center;padding:50px 20px}
+.meta{color:var(--muted);font-size:13px;margin-bottom:6px}
+article h1{font-size:22px;margin:4px 0 14px}
+article h2{font-size:17px;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+article h3{font-size:15px;margin:18px 0 8px}
+article a{color:var(--accent)}
+article p>em:only-child{color:var(--muted)}
+article ul{padding-left:22px}
+article li{margin:4px 0}
+article table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0;display:block;overflow-x:auto}
+article th,article td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+article th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+article blockquote{margin:10px 0;padding:6px 14px;border-left:3px solid var(--accent);color:var(--muted)}
+article code{background:var(--cell);padding:1px 5px;border-radius:4px}
+@media print{header nav,aside{display:none}main{grid-template-columns:1fr}body{background:#fff}}
+</style>
+</head>
+<body>
+<header>
+  <h1>AP Investment Reports</h1>
+  <span>Andhra Pradesh investments, MoUs, SIPB approvals, infrastructure and policy · weekly, Mondays 7:30 AM IST</span>
+  <nav><a href="{{ url_for('index') }}">Jyotish chart</a><a class="on" href="{{ url_for('ap_reports') }}">AP reports</a></nav>
+</header>
+<main>
+  <aside class="panel">
+    <h2 class="k">Weekly reports</h2>
+    {% if reports %}
+    <div class="weeks">
+      {% for r in reports %}
+      <a href="{{ url_for('ap_reports', day=r.date) }}" class="{{ 'on' if current and r.date == current.date }}">
+        Week ending {{ r.label }}{% if r.period %}<small>{{ r.period }}</small>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="note">No reports yet.</div>
+    {% endif %}
+    <div class="note">A new report is added each Monday by the weekly job and also emailed.</div>
+  </aside>
+
+  <section class="panel">
+    {% if current %}
+    <div class="meta">Report generated {{ current.label }}{% if current.period %} · covers {{ current.period }}{% endif %}</div>
+    <article>{{ body|safe }}</article>
+    {% else %}
+    <div class="empty">No reports found in <code>{{ report_dir }}</code> yet. The first one appears after the next Monday run.</div>
+    {% endif %}
+  </section>
+</main>
+</body>
+</html>

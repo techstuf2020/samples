@@ -27,6 +27,14 @@ PORT=8080 HOST=127.0.0.1 .venv/bin/python app.py
 - `POST /api/chart` with JSON `{date, time, lat, lon, zone | utc_offset, true_node}`
   returns the full chart as JSON.
 
+### AP investment reports page
+
+`/ap-reports` lists the weekly Andhra Pradesh investment reports written by the
+`ap-investment-agent` job (branch `samples`, folder `ap-investment-agent/`) and shows each
+one as a formatted page; `/ap-reports/YYYY-MM-DD` opens a specific week. Reports are read
+from `/opt/ap-investment-agent/reports` (override with `AP_REPORT_DIR`). Report HTML is
+sanitised with nh3, allowing only basic formatting and http(s) links.
+
 `app.py` uses Flask's development server. For a shared deployment run it behind a
 WSGI server, e.g. `pip install gunicorn && gunicorn -b 0.0.0.0:5000 app:app`.
 
@@ -51,7 +59,7 @@ WSGI server, e.g. `pip install gunicorn && gunicorn -b 0.0.0.0:5000 app:app`.
 ## Tests
 
 ```bash
-.venv/bin/python -m unittest -v tests.test_chart
+.venv/bin/python -m unittest -v tests.test_chart tests.test_app
 ```
 
 ## Conventions

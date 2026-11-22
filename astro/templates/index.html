@@ -18,6 +18,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-ap
 header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 header h1{margin:0;font-size:20px;letter-spacing:.2px}
 header span{color:var(--muted);font-size:13px}
+.topnav{margin-left:auto;display:flex;gap:16px;font-size:14px}
+.topnav a{color:var(--muted);text-decoration:none}
+.topnav a.on,.topnav a:hover{color:var(--accent)}
 main{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;padding:20px 24px;max-width:1400px;margin:0 auto}
 @media (max-width:900px){main{grid-template-columns:minmax(0,1fr);padding:16px}}
 main>*,.top>*{min-width:0}
@@ -95,6 +98,7 @@ details.cur{border-color:var(--accent)}
 <header>
   <h1>Jyotish Chart</h1>
   <span>Sidereal · Lahiri ayanamsa · Whole-sign houses · Vimshottari dasha · Swiss Ephemeris</span>
+  <nav class="topnav"><a class="on" href="{{ url_for('index') }}">Jyotish chart</a><a href="{{ url_for('ap_reports') }}">AP reports</a></nav>
 </header>
 <main>
   <aside class="panel">
