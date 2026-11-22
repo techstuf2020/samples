@@ -14,7 +14,7 @@ It runs every **Monday at 7:30 AM IST** using a systemd timer on an always-on Li
 |---|---|---|
 | Anthropic API key | [console.anthropic.com](https://console.anthropic.com) > API keys | Pay per use, separate from a Claude Pro plan. Roughly one long research request plus web searches each week |
 | Gmail App Password | Google Account > Security > 2-Step Verification > App passwords | Free |
-| Always-on Linux machine | e.g. AWS EC2 (a `t4g.nano` or `t3.micro` is enough) | EC2 hourly price |
+| Always-on Linux machine | e.g. AWS EC2 `t3.micro` with Ubuntu (free-tier eligible) | EC2 hourly price |
 
 ## Try it once
 
@@ -34,7 +34,8 @@ Settings are read from environment variables; see [`.env.example`](.env.example)
 ## Install on EC2 (Ubuntu)
 
 ```bash
-# 1. Build
+# 1. Build (the swap file stops a 1 GB machine running out of memory while compiling)
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
 sudo apt-get update && sudo apt-get install -y build-essential git
 curl https://sh.rustup.rs -sSf | sh -s -- -y && . "$HOME/.cargo/env"
 git clone -b samples https://github.com/techstuf2020/samples.git
