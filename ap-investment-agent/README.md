@@ -20,7 +20,14 @@ By default it runs the research through **Claude Code signed in with your Claude
 
 ## Install on EC2 (Ubuntu)
 
-Run these as the default `ubuntu` user.
+**Quick way:** one installer does everything below and asks you for the Claude sign-in, your Gmail address and the App Password:
+
+```bash
+curl -fsSL -o install.sh https://raw.githubusercontent.com/techstuf2020/samples/samples/ap-investment-agent/deploy/install.sh
+bash install.sh
+```
+
+**By hand:** run these as the default `ubuntu` user.
 
 ```bash
 # 1. Build (the swap file stops a 1 GB machine running out of memory while compiling)
