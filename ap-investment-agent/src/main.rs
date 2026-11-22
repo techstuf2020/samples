@@ -2,8 +2,12 @@
 //! saves the report as Markdown, and emails it through Gmail.
 //!
 //! Usage: ap-investment-agent [--dry-run] [--days N]
+//!
+//! BACKEND=claude-code (default) runs the Claude Code CLI on a Claude subscription;
+//! BACKEND=api calls the Claude API with ANTHROPIC_API_KEY.
 
 mod claude;
+mod claude_code;
 mod email;
 mod prompt;
 
@@ -24,9 +28,8 @@ fn main() -> Result<()> {
         }
     }
 
-    // Check every setting up front so a scheduled run fails before spending on the API.
-    let api_key = required("ANTHROPIC_API_KEY")?;
-    let model = env::var("CLAUDE_MODEL").unwrap_or_else(|_| "claude-opus-5-5".into());
+    // Check every setting up front so a scheduled run fails before spending on research.
+    let backend = Backend::from_env()?;
     let smtp = if dry_run {
         None
     } else {
@@ -43,8 +46,7 @@ fn main() -> Result<()> {
     let (from, to) = (from.format("%d %b %Y").to_string(), today.format("%d %b %Y").to_string());
 
     eprintln!("Researching Andhra Pradesh investments from {from} to {to}...");
-    let claude = claude::Claude::new(api_key, model)?;
-    let body = claude.research(prompt::SYSTEM, &prompt::weekly(&from, &to))?;
+    let body = backend.research(prompt::SYSTEM, &prompt::weekly(&from, &to))?;
     let report = format!("# Andhra Pradesh investment report\n\n_{from} to {to}_\n\n{body}\n");
 
     let dir = PathBuf::from(env::var("REPORT_DIR").unwrap_or_else(|_| "reports".into()));
@@ -61,6 +63,33 @@ fn main() -> Result<()> {
         None => println!("{report}"),
     }
     Ok(())
+}
+
+enum Backend {
+    ClaudeCode { bin: String },
+    Api { api_key: String, model: String },
+}
+
+impl Backend {
+    fn from_env() -> Result<Self> {
+        match env::var("BACKEND").as_deref() {
+            Err(_) | Ok("claude-code") => Ok(Self::ClaudeCode {
+                bin: env::var("CLAUDE_BIN").unwrap_or_else(|_| "claude".into()),
+            }),
+            Ok("api") => Ok(Self::Api {
+                api_key: required("ANTHROPIC_API_KEY")?,
+                model: env::var("CLAUDE_MODEL").unwrap_or_else(|_| "claude-opus-5-5".into()),
+            }),
+            Ok(other) => bail!("BACKEND must be claude-code or api, not {other}"),
+        }
+    }
+
+    fn research(self, system: &str, prompt: &str) -> Result<String> {
+        match self {
+            Self::ClaudeCode { bin } => claude_code::research(&bin, system, prompt),
+            Self::Api { api_key, model } => claude::Claude::new(api_key, model)?.research(system, prompt),
+        }
+    }
 }
 
 fn required(name: &str) -> Result<String> {

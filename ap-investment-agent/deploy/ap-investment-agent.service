@@ -5,6 +5,10 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+# Runs as the user that installed Claude Code (Ubuntu EC2 default user).
+User=ubuntu
 EnvironmentFile=/etc/ap-investment-agent.env
 Environment=REPORT_DIR=/opt/ap-investment-agent/reports
+Environment=CLAUDE_BIN=/home/ubuntu/.local/bin/claude
 ExecStart=/opt/ap-investment-agent/ap-investment-agent
+TimeoutStartSec=30min
