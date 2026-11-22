@@ -78,6 +78,14 @@ if [ "$configure" = yes ]; then
     echo "When it prints a long token, copy it."
     "$CLAUDE" setup-token < /dev/tty
     ask_secret "Paste the token here (it stays hidden): " token
+    # A long token often wraps across lines when copied; drop any spaces or line breaks.
+    token="${token//[[:space:]]/}"
+    echo "Checking the token (${#token} characters)..."
+    if ! CLAUDE_CODE_OAUTH_TOKEN="$token" "$CLAUDE" -p "Reply with OK" > /dev/null 2>&1; then
+        echo "Claude did not accept that token. Run 'bash install.sh' again and copy the whole token." >&2
+        exit 1
+    fi
+    echo "Token works."
     ask "Your Gmail address: " gmail
     ask_secret "Your Gmail App Password (hidden): " app_password
     app_password="${app_password// /}"
