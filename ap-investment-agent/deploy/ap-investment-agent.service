@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly Andhra Pradesh investment report
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/ap-investment-agent.env
+Environment=REPORT_DIR=/opt/ap-investment-agent/reports
+ExecStart=/opt/ap-investment-agent/ap-investment-agent
